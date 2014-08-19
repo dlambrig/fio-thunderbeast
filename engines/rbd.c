@@ -26,6 +26,7 @@ struct rbd_options {
 	char *rbd_name;
 	char *pool_name;
 	char *client_name;
+	unsigned int xio;
 };
 
 static struct fio_option options[] = {
@@ -53,6 +54,15 @@ static struct fio_option options[] = {
 	 .type     = FIO_OPT_STR_STORE,
 	 .help     = "Name of the ceph client to access the RBD for the RBD engine",
 	 .off1     = offsetof(struct rbd_options, client_name),
+	 .category = FIO_OPT_C_ENGINE,
+	 .group    = FIO_OPT_G_RBD,
+	 },
+	{
+	 .name     = "xio",
+	 .lname    = "rbd engine xio",
+	 .type     = FIO_OPT_BOOL,
+	 .help     = "Use xio messenger for rados connection",
+	 .off1     = offsetof(struct rbd_options, xio),
 	 .category = FIO_OPT_C_ENGINE,
 	 .group    = FIO_OPT_G_RBD,
 	 },
@@ -110,10 +120,18 @@ static int _fio_rbd_connect(struct thread_data *td)
 		goto failed_early;
 	}
 
-	r = rados_connect(rbd_data->cluster);
-	if (r < 0) {
-		log_err("rados_connect failed.\n");
-		goto failed_shutdown;
+	if (o->xio) {
+		r = rados_xio_connect(rbd_data->cluster);
+		if (r < 0) {
+			log_err("rados_xio_connect failed.\n");
+			goto failed_shutdown;
+		}
+	} else {
+		r = rados_connect(rbd_data->cluster);
+		if (r < 0) {
+			log_err("rados_connect failed.\n");
+			goto failed_shutdown;
+		}
 	}
 
 	r = rados_ioctx_create(rbd_data->cluster, o->pool_name,
