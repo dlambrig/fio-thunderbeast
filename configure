@@ -161,6 +161,8 @@ for opt do
   ;;
   --disable-rbd) disable_rbd="yes"
   ;;
+  --disable-cephosd) disable_cephosd="yes"
+  ;;
   --disable-gfapi) disable_gfapi="yes"
   ;;
   --enable-libhdfs) libhdfs="yes"
@@ -1215,6 +1217,25 @@ if test "$disable_rbd" != "yes"  && compile_prog "" "-lrbd -lrados" "rbd"; then
 fi
 echo "Rados Block Device engine     $rbd"
 
+
+##########################################
+# check for ceph-osd
+cephosd="no"
+cat > $TMPC << EOF
+#include <ceph_osd.h>
+
+int main(int argc, char **argv)
+{
+  libosd_init(NULL);
+  return 0;
+}
+EOF
+if test "$disable_cephosd" != "yes"  && compile_prog "" "-lceph-osd" "cephosd"; then
+  LIBS="-lceph-osd $LIBS"
+  cephosd="yes"
+fi
+echo "Ceph OSD engine               $cephosd"
+
 ##########################################
 # check for rbd_invaidate_cache()
 rbd_inval="no"
@@ -1544,6 +1565,9 @@ if test "$rbd" = "yes" ; then
 fi
 if test "$rbd_inval" = "yes" ; then
   output_sym "CONFIG_RBD_INVAL"
+fi
+if test "$cephosd" = "yes" ; then
+  output_sym "CONFIG_CEPHOSD"
 fi
 if test "$setvbuf" = "yes" ; then
   output_sym "CONFIG_SETVBUF"

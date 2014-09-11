@@ -1518,6 +1518,11 @@ struct fio_option fio_options[FIO_MAX_OPTS] = {
 			    .help = "Rados Block Device asynchronous IO"
 			  },
 #endif
+#ifdef CONFIG_CEPHOSD
+			  { .ival = "cephosd",
+			    .help = "Ceph OSD IO"
+			  },
+#endif
 			  { .ival = "mmap",
 			    .help = "Memory mapped IO"
 			  },

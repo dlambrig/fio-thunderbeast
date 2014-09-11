@@ -1,0 +1,22 @@
+######################################################################
+# Example test for the ceph-osd engine.
+# 
+# Runs a 4k random write test against an OSD via libosd
+#
+# NOTE: Make sure you have either a volume named 'fio_test' or change 
+#       the ceph_volume parameter.
+######################################################################
+[global]
+ioengine=ceph-osd
+ceph_osd_id=0
+ceph_conf=/etc/ceph/ceph.conf
+ceph_cluster=ceph
+ceph_volume=fio_test
+invalidate=0	# mandatory
+rw=randwrite
+bs=4k
+
+[ceph-osd]
+nr_files=16
+size=64m
+iodepth=32

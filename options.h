@@ -98,6 +98,7 @@ enum opt_category_group {
 	__FIO_OPT_G_ACT,
 	__FIO_OPT_G_LATPROF,
         __FIO_OPT_G_RBD,
+        __FIO_OPT_G_CEPHOSD,
         __FIO_OPT_G_GFAPI,
 	__FIO_OPT_G_NR,
 
@@ -129,6 +130,7 @@ enum opt_category_group {
 	FIO_OPT_G_ACT		= (1U << __FIO_OPT_G_ACT),
 	FIO_OPT_G_LATPROF	= (1U << __FIO_OPT_G_LATPROF),
 	FIO_OPT_G_RBD		= (1U << __FIO_OPT_G_RBD),
+	FIO_OPT_G_CEPHOSD	= (1U << __FIO_OPT_G_CEPHOSD),
 	FIO_OPT_G_GFAPI		= (1U << __FIO_OPT_G_GFAPI),
 	FIO_OPT_G_INVALID	= (1U << __FIO_OPT_G_NR),
 };
