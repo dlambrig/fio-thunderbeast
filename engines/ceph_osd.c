@@ -147,14 +147,15 @@ static int fio_cephosd_queue(struct thread_data *td, struct io_u *iou)
 
 	if (iou->ddir == DDIR_WRITE) {
 		r = libosd_write(data->osd, object, data->volume, iou->offset,
-				 iou->buflen, iou->buf, iou);
+				 iou->buflen, iou->buf,
+				 LIBOSD_WRITE_CB_STABLE, iou);
 		if (r != 0) {
 			log_err("libosd_write failed with %d\n", r);
 			goto failed;
 		}
 	} else if (iou->ddir == DDIR_READ) {
 		r = libosd_read(data->osd, object, data->volume, iou->offset,
-				iou->buflen, iou->buf, iou);
+				iou->buflen, iou->buf, 0, iou);
 		if (r != 0) {
 			log_err("libosd_read failed with %d\n", r);
 			goto failed;
@@ -200,7 +201,7 @@ void cephosd_on_active(struct libosd *osd, void *user)
 	struct cephosd_data *data = (struct cephosd_data*)user;
 	sem_post(&data->active);
 }
-void cephosd_on_io_completion(int result, uint64_t length, void *user)
+void cephosd_on_io_completion(int result, uint64_t length, int flags, void *user)
 {
 	struct io_u *io_u = (struct io_u *)user;
 	struct cephosd_iou *iou = (struct cephosd_iou *)io_u->engine_data;
