@@ -188,8 +188,10 @@ static void fio_cephosd_cleanup(struct thread_data *td)
 	struct cephosd_data *data = td->io_ops->data;
 	dprint(FD_IO, "fio_cephosd_cleanup\n");
 	if (data) {
-		if (data->osd)
-			libosd_cleanup(data->osd);
+		libosd_shutdown(data->osd);
+		libosd_join(data->osd);
+		libosd_cleanup(data->osd);
+
 		free(data->aio_events);
 		free(data);
 	}
@@ -254,19 +256,7 @@ static int fio_cephosd_setup(struct thread_data *td)
 		log_err("libosd_get_volume(%s) failed\n", o->volume);
 		goto out_shutdown;
 	}
-#if 0
-	/* taken from "net" engine. Pretend we deal with files,
-	 * even if we do not have any ideas about files.
-	 * The size of the RBD is set instead of a artificial file.
-	 */
-	if (!td->files_index) {
-		add_file(td, td->o.filename ? : "cephosd", 0, 0);
-		td->o.nr_files = td->o.nr_files ? : 1;
-		td->o.open_files++;
-	}
-	f = td->files[0];
-	f->real_file_size = info.size;
-#endif
+
 	dprint(FD_IO, "fio_cephosd_setup: waiting for active\n");
 	sem_wait(&data->active);
 	dprint(FD_IO, "fio_cephosd_setup: osd active\n");
