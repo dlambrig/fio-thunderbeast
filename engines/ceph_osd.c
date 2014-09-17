@@ -225,6 +225,8 @@ static int fio_cephosd_setup(struct thread_data *td)
 		.config = o->config,
 		.callbacks = &cephosd_callbacks,
 	};
+	struct fio_file *f;
+	unsigned int i;
 	int r = 0;
 
 	dprint(FD_IO, "fio_cephosd_setup\n");
@@ -260,6 +262,19 @@ static int fio_cephosd_setup(struct thread_data *td)
 	dprint(FD_IO, "fio_cephosd_setup: waiting for active\n");
 	sem_wait(&data->active);
 	dprint(FD_IO, "fio_cephosd_setup: osd active\n");
+
+
+	for_each_file(td, f, i) {
+		f->real_file_size = td->o.size / td->o.nr_files;
+		r = libosd_truncate(data->osd, f->file_name, data->volume,
+				f->real_file_size, 0, NULL);
+		if (r != 0) {
+			log_err("libosd_truncate(%s) failed with %d\n",
+					f->file_name, r);
+			goto out_shutdown;
+		}
+		// TODO: wait for completion, so we don't race later
+	}
 	return 0;
 
 out_shutdown:
