@@ -203,6 +203,10 @@ void cephosd_on_active(struct libosd *osd, void *user)
 	struct cephosd_data *data = (struct cephosd_data*)user;
 	sem_post(&data->active);
 }
+void cephosd_on_shutdown(struct libosd *osd, void *user)
+{
+	log_err("cephosd_on_shutdown: osd shutting down!\n");
+}
 void cephosd_on_io_completion(int result, uint64_t length, int flags, void *user)
 {
 	struct io_u *io_u = (struct io_u *)user;
@@ -212,6 +216,7 @@ void cephosd_on_io_completion(int result, uint64_t length, int flags, void *user
 
 struct libosd_callbacks cephosd_callbacks = {
 	.osd_active = cephosd_on_active,
+	.osd_shutdown = cephosd_on_shutdown,
 	.read_completion = cephosd_on_io_completion,
 	.write_completion = cephosd_on_io_completion,
 };
