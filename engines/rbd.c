@@ -135,7 +135,7 @@ static int _fio_rbd_connect(struct thread_data *td)
 		goto failed_shutdown;
 	}
 
-	r = rbd_open(rbd->io_ctx, o->rbd_name, &rbd->image, NULL /*snap */ );
+	r = rbd_open(rbd->io_ctx, o->rbd_name, &rbd->image);
 	if (r < 0) {
 		log_err("rbd_open failed.\n");
 		goto failed_open;
