@@ -1230,8 +1230,8 @@ int main(int argc, char **argv)
   return 0;
 }
 EOF
-if test "$disable_cephosd" != "yes"  && compile_prog "" "-lceph-osd" "cephosd"; then
-  LIBS="-lceph-osd $LIBS"
+if test "$disable_cephosd" != "yes"  && compile_prog "" "-lceph-osd -lrados" "cephosd"; then
+  LIBS="-lceph-osd -lrados $LIBS"
   cephosd="yes"
 fi
 echo "Ceph OSD engine               $cephosd"
