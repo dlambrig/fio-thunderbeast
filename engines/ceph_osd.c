@@ -137,6 +137,13 @@ static int fio_cephosd_getevents(struct thread_data *td, unsigned int min,
 	return events;
 }
 
+void cephosd_on_io_completion(int result, uint64_t length, int flags, void *user)
+{
+	struct io_u *io_u = (struct io_u *)user;
+	struct cephosd_iou *iou = (struct cephosd_iou *)io_u->engine_data;
+	iou->io_complete = 1;
+}
+
 static int fio_cephosd_queue(struct thread_data *td, struct io_u *iou)
 {
 	struct cephosd_data *data = td->io_ops->data;
@@ -147,15 +154,16 @@ static int fio_cephosd_queue(struct thread_data *td, struct io_u *iou)
 
 	if (iou->ddir == DDIR_WRITE) {
 		r = libosd_write(data->osd, object, data->volume, iou->offset,
-				 iou->buflen, iou->buf,
-				 LIBOSD_WRITE_CB_STABLE, iou);
+				 iou->buflen, iou->buf, LIBOSD_WRITE_CB_STABLE,
+				 cephosd_on_io_completion, iou);
 		if (r != 0) {
 			log_err("libosd_write failed with %d\n", r);
 			goto failed;
 		}
 	} else if (iou->ddir == DDIR_READ) {
 		r = libosd_read(data->osd, object, data->volume, iou->offset,
-				iou->buflen, iou->buf, 0, iou);
+				iou->buflen, iou->buf, LIBOSD_READ_FLAGS_NONE,
+				cephosd_on_io_completion, iou);
 		if (r != 0) {
 			log_err("libosd_read failed with %d\n", r);
 			goto failed;
@@ -207,18 +215,10 @@ void cephosd_on_shutdown(struct libosd *osd, void *user)
 {
 	log_err("cephosd_on_shutdown: osd shutting down!\n");
 }
-void cephosd_on_io_completion(int result, uint64_t length, int flags, void *user)
-{
-	struct io_u *io_u = (struct io_u *)user;
-	struct cephosd_iou *iou = (struct cephosd_iou *)io_u->engine_data;
-	iou->io_complete = 1;
-}
 
 struct libosd_callbacks cephosd_callbacks = {
 	.osd_active = cephosd_on_active,
 	.osd_shutdown = cephosd_on_shutdown,
-	.read_completion = cephosd_on_io_completion,
-	.write_completion = cephosd_on_io_completion,
 };
 
 static int fio_cephosd_setup(struct thread_data *td)
@@ -272,7 +272,8 @@ static int fio_cephosd_setup(struct thread_data *td)
 	for_each_file(td, f, i) {
 		f->real_file_size = td->o.size / td->o.nr_files;
 		r = libosd_truncate(data->osd, f->file_name, data->volume,
-				f->real_file_size, 0, NULL);
+				    f->real_file_size, LIBOSD_WRITE_CB_UNSTABLE,
+				    NULL, NULL);
 		if (r != 0) {
 			log_err("libosd_truncate(%s) failed with %d\n",
 					f->file_name, r);
