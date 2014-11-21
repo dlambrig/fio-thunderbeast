@@ -18,7 +18,7 @@ struct cephosd_iou {
 struct cephosd_data {
 	struct io_u **aio_events;
 	struct libosd *osd;
-	uuid_t volume;
+	unsigned char volume[16];
 	sem_t active;
 };
 
