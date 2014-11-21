@@ -1226,7 +1226,7 @@ cat > $TMPC << EOF
 
 int main(int argc, char **argv)
 {
-  libosd_init(NULL);
+  libosd_init(0);
   return 0;
 }
 EOF
