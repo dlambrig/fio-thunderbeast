@@ -195,7 +195,8 @@ static void fio_cephosd_cleanup(struct thread_data *td)
 	struct cephosd_data *data = td->io_ops->data;
 	dprint(FD_IO, "fio_cephosd_cleanup\n");
 	if (data) {
-		libosd_remote_cleanup(data->osd);
+		if (data->osd)
+			libosd_remote_cleanup(data->osd);
 
 		free(data->aio_events);
 		free(data);
@@ -234,6 +235,7 @@ static int fio_cephosd_setup(struct thread_data *td)
 	data->osd = libosd_remote_init(&init_args);
 	if (data->osd == NULL) {
 		log_err("libosd_remote_init failed\n");
+		r = -1;
 		goto out_cleanup;
 	}
 
