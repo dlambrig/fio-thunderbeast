@@ -13,10 +13,12 @@ ceph_conf=/etc/ceph/ceph.conf
 ceph_cluster=ceph
 ceph_volume=fio_test
 invalidate=0	# mandatory
-rw=randwrite
-bs=4k
+rw=write
+bs=64k
 
 [ceph-osd]
-nr_files=16
+runtime=20s
+time_based=1
+nr_files=1
 size=64m
 iodepth=32
