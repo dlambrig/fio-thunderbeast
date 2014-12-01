@@ -1,12 +1,11 @@
 /*
  * ceph-osd engine
  *
- * IO engine using Ceph's libosd to test the OSD daemon.
+ * IO engine using Ceph's remote libosd to test the OSD daemon.
  *
  */
 
-#include <ceph_osd.h>
-#include <semaphore.h>
+#include <ceph_osd_remote.h>
 
 #include "../fio.h"
 
@@ -17,9 +16,8 @@ struct cephosd_iou {
 
 struct cephosd_data {
 	struct io_u **aio_events;
-	struct libosd *osd;
+	struct libosd_remote *osd;
 	unsigned char volume[16];
-	sem_t active;
 };
 
 struct cephosd_options {
@@ -89,8 +87,6 @@ static int setup_cephosd_data(struct thread_data *td,
 	if (!data->aio_events)
 		goto failed;
 
-	sem_init(&data->active, 0, 0);
-
 	*cephosd_data_ptr = data;
 	return 0;
 
@@ -137,7 +133,8 @@ static int fio_cephosd_getevents(struct thread_data *td, unsigned int min,
 	return events;
 }
 
-void cephosd_on_io_completion(int result, uint64_t length, int flags, void *user)
+static void cephosd_on_io_completion(int result, uint64_t length,
+				     int flags, void *user)
 {
 	struct io_u *io_u = (struct io_u *)user;
 	struct cephosd_iou *iou = (struct cephosd_iou *)io_u->engine_data;
@@ -153,19 +150,21 @@ static int fio_cephosd_queue(struct thread_data *td, struct io_u *iou)
 	fio_ro_check(td, iou);
 
 	if (iou->ddir == DDIR_WRITE) {
-		r = libosd_write(data->osd, object, data->volume, iou->offset,
-				 iou->buflen, iou->buf, LIBOSD_WRITE_CB_STABLE,
-				 cephosd_on_io_completion, iou);
+		r = libosd_remote_write(data->osd, object, data->volume,
+					iou->offset, iou->buflen, iou->buf,
+					LIBOSD_WRITE_CB_STABLE,
+					cephosd_on_io_completion, iou);
 		if (r != 0) {
-			log_err("libosd_write failed with %d\n", r);
+			log_err("libosd_remote_write failed with %d\n", r);
 			goto failed;
 		}
 	} else if (iou->ddir == DDIR_READ) {
-		r = libosd_read(data->osd, object, data->volume, iou->offset,
-				iou->buflen, iou->buf, LIBOSD_READ_FLAGS_NONE,
-				cephosd_on_io_completion, iou);
+		r = libosd_remote_read(data->osd, object, data->volume,
+				       iou->offset, iou->buflen, iou->buf,
+				       LIBOSD_READ_FLAGS_NONE,
+				       cephosd_on_io_completion, iou);
 		if (r != 0) {
-			log_err("libosd_read failed with %d\n", r);
+			log_err("libosd_remote_read failed with %d\n", r);
 			goto failed;
 		}
 #if 0
@@ -196,39 +195,21 @@ static void fio_cephosd_cleanup(struct thread_data *td)
 	struct cephosd_data *data = td->io_ops->data;
 	dprint(FD_IO, "fio_cephosd_cleanup\n");
 	if (data) {
-		libosd_shutdown(data->osd);
-		libosd_join(data->osd);
-		libosd_cleanup(data->osd);
+		libosd_remote_cleanup(data->osd);
 
 		free(data->aio_events);
 		free(data);
 	}
 }
 
-/* libceph-osd callback functions */
-void cephosd_on_active(struct libosd *osd, void *user)
-{
-	struct cephosd_data *data = (struct cephosd_data*)user;
-	sem_post(&data->active);
-}
-void cephosd_on_shutdown(struct libosd *osd, void *user)
-{
-	log_err("cephosd_on_shutdown: osd shutting down!\n");
-}
-
-struct libosd_callbacks cephosd_callbacks = {
-	.osd_active = cephosd_on_active,
-	.osd_shutdown = cephosd_on_shutdown,
-};
-
 static int fio_cephosd_setup(struct thread_data *td)
 {
 	struct cephosd_options *o = td->eo;
 	struct cephosd_data *data = NULL;
-	struct libosd_init_args init_args = {
+	struct libosd_remote_args init_args = {
 		.id = o->id,
 		.config = o->config,
-		.callbacks = &cephosd_callbacks,
+		.cluster = o->cluster,
 	};
 	struct fio_file *f;
 	unsigned int i;
@@ -243,51 +224,41 @@ static int fio_cephosd_setup(struct thread_data *td)
 		goto out;
 	}
 	td->io_ops->data = data;
-	init_args.user = data;
 
 	/* libceph-osd does not allow us to run first in the main thread and
 	 * later in a fork child. It needs to be the same process context all
 	 * the time. */
 	td->o.use_thread = 1;
 
-	/* initialize and start the osd */
-	data->osd = libosd_init(&init_args);
+	/* connect to the osd */
+	data->osd = libosd_remote_init(&init_args);
 	if (data->osd == NULL) {
-		log_err("libosd_init failed\n");
+		log_err("libosd_remote_init failed\n");
 		goto out_cleanup;
 	}
 
 	/* query the volume name */
-	r = libosd_get_volume(data->osd, o->volume, data->volume);
+	r = libosd_remote_get_volume(data->osd, o->volume, data->volume);
 	if (r != 0) {
-		log_err("libosd_get_volume(%s) failed\n", o->volume);
-		goto out_shutdown;
+		log_err("libosd_remote_get_volume(%s) failed\n", o->volume);
+		goto out_cleanup;
 	}
-
-	dprint(FD_IO, "fio_cephosd_setup: waiting for active\n");
-	sem_wait(&data->active);
-	dprint(FD_IO, "fio_cephosd_setup: osd active\n");
-
 
 	for_each_file(td, f, i) {
 		f->real_file_size = td->o.size / td->o.nr_files;
-		r = libosd_truncate(data->osd, f->file_name, data->volume,
-				    f->real_file_size, LIBOSD_WRITE_CB_UNSTABLE,
-				    NULL, NULL);
+		r = libosd_remote_truncate(data->osd, f->file_name,
+					   data->volume, f->real_file_size,
+					   LIBOSD_WRITE_CB_UNSTABLE,
+					   NULL, NULL);
 		if (r != 0) {
-			log_err("libosd_truncate(%s) failed with %d\n",
+			log_err("libosd_remote_truncate(%s) failed with %d\n",
 					f->file_name, r);
-			goto out_shutdown;
+			goto out_cleanup;
 		}
 		// TODO: wait for completion, so we don't race later
 	}
 	return 0;
 
-out_shutdown:
-	libosd_shutdown(data->osd);
-	dprint(FD_IO, "fio_cephosd_setup: waiting for shutdown\n");
-	libosd_join(data->osd);
-	dprint(FD_IO, "fio_cephosd_setup: osd shutdown\n");
 out_cleanup:
 	fio_cephosd_cleanup(td);
 out:
@@ -323,7 +294,7 @@ static int fio_cephosd_io_u_init(struct thread_data *td, struct io_u *io_u)
 }
 
 static struct ioengine_ops ioengine = {
-	.name			= "ceph-osd",
+	.name			= "ceph-remote",
 	.version		= FIO_IOOPS_VERSION,
 	.setup			= fio_cephosd_setup,
 	.init			= fio_cephosd_init,
