@@ -18,6 +18,7 @@ DEBUGFLAGS = -D_FORTIFY_SOURCE=2 -DFIO_INC_DEBUG
 CPPFLAGS= -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -DFIO_INTERNAL $(DEBUGFLAGS)
 OPTFLAGS= -O3 -g -ffast-math
 CFLAGS	= -std=gnu99 -Wwrite-strings -Wall -Wdeclaration-after-statement $(OPTFLAGS) $(EXTFLAGS) $(BUILD_CFLAGS)
+CXXFLAGS	= $(OPTFLAGS) $(EXTFLAGS) $(BUILD_CXXFLAGS) -Wno-pointer-arith
 LIBS	+= -lm $(EXTLIBS)
 PROGS	= fio
 SCRIPTS = tools/fio_generate_plots tools/plot/fio2gnuplot tools/genfio
@@ -83,6 +84,9 @@ ifdef CONFIG_SOLARISAIO
 endif
 ifdef CONFIG_WINDOWSAIO
   SOURCE += engines/windowsaio.c
+endif
+ifdef CONFIG_CBD
+  CXXSOURCE += engines/cbd.cc
 endif
 ifdef CONFIG_RBD
   SOURCE += engines/rbd.c
@@ -155,6 +159,7 @@ ifneq (,$(findstring CYGWIN,$(CONFIG_TARGET_OS)))
 endif
 
 OBJS = $(SOURCE:.c=.o)
+OBJS += $(CXXSOURCE:.cc=.o)
 
 FIO_OBJS = $(OBJS) fio.o
 GFIO_OBJS = $(OBJS) gfio.o graph.o tickmarks.o ghelpers.o goptions.o gerror.o \

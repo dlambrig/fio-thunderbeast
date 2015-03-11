@@ -14,6 +14,7 @@ else
 fi
 
 TMPC="${TMPDIR1}/fio-conf-${RANDOM}-$$-${RANDOM}.c"
+TMPCXX="${TMPDIR1}/fio-conf-${RANDOM}-$$-${RANDOM}.cc"
 TMPO="${TMPDIR1}/fio-conf-${RANDOM}-$$-${RANDOM}.o"
 TMPE="${TMPDIR1}/fio-conf-${RANDOM}-$$-${RANDOM}.exe"
 
@@ -40,6 +41,9 @@ fatal() {
 # Default CFLAGS
 CFLAGS="-D_GNU_SOURCE -include config-host.h"
 BUILD_CFLAGS=""
+
+CXXFLAGS="-std=gnu++1y -D_GNU_SOURCE -include config-host.h"
+BUILD_CXXFLAGS=""
 
 # Print a helpful header at the top of config.log
 echo "# FIO configure log $(date)" >> config.log
@@ -81,6 +85,31 @@ do_cc() {
     fatal "You can run configure with --disable-werror to bypass this check."
 }
 
+do_cxx() {
+    # Run the compiler, capturing its output to the log.
+    echo $cxx "$@" >> config.log
+    $cxx "$@" >> config.log 2>&1 || return $?
+    # Test passed. If this is an --enable-werror build, rerun
+    # the test with -Werror and bail out if it fails. This
+    # makes warning-generating-errors in configure test code
+    # obvious to developers.
+    if test "$werror" != "yes"; then
+        return 0
+    fi
+    # Don't bother rerunning the compile if we were already using -Werror
+    case "$*" in
+        *-Werror*)
+           return 0
+        ;;
+    esac
+    echo $cxx -Werror "$@" >> config.log
+    $cxx -Werror "$@" >> config.log 2>&1 && return $?
+    echo "ERROR: configure test passed without -Werror but failed with -Werror."
+    echo "This is probably a bug in the configure script. The failing command"
+    echo "will be at the bottom of config.log."
+    fatal "You can run configure with --disable-werror to bypass this check."
+}
+
 compile_object() {
   do_cc $CFLAGS -c -o $TMPO $TMPC
 }
@@ -90,6 +119,13 @@ compile_prog() {
   local_ldflags="$2 $LIBS"
   echo "Compiling test case $3" >> config.log
   do_cc $CFLAGS $local_cflags -o $TMPE $TMPC $LDFLAGS $local_ldflags
+}
+
+cxx_compile_prog() {
+  local_cxxflags="$1"
+  local_ldflags="$2 $LIBS"
+  echo "Compiling test case $3" >> config.log
+  do_cxx $CXXFLAGS $local_cxxflags -o $TMPE $TMPCXX $LDFLAGS $local_ldflags
 }
 
 feature_not_found() {
@@ -146,9 +182,15 @@ for opt do
   --esx)
   esx="yes"
   ;;
-  --cc=*) CC="$optarg"
+  --cc=*) cc="$optarg"
+  ;;
+  --cxx=*) cxx="$optarg"
   ;;
   --extra-cflags=*) CFLAGS="$CFLAGS $optarg"
+  ;;
+  --extra-cxxflags=*) CXXFLAGS="$CXXFLAGS $optarg"
+  ;;
+  --extra-ldflags=*) LDFLAGS="$LDFLAGS $optarg"
   ;;
   --build-32bit-win) build_32bit_win="yes"
   ;;
@@ -156,6 +198,8 @@ for opt do
   gfio="yes"
   ;;
   --disable-numa) disable_numa="yes"
+  ;;
+  --disable-cbd) disable_cbd="yes"
   ;;
   --disable-rbd) disable_rbd="yes"
   ;;
@@ -187,6 +231,7 @@ fi
 
 cross_prefix=${cross_prefix-${CROSS_COMPILE}}
 cc="${CC-${cross_prefix}gcc}"
+cxx="${CXX-${cross_prefix}g++}"
 
 if check_define __ANDROID__ ; then
   targetos="Android"
@@ -262,6 +307,8 @@ CYGWIN*)
   output_sym "CONFIG_IPV6"
   echo "CC=$CC" >> $config_host_mak
   echo "BUILD_CFLAGS=$CFLAGS -include config-host.h -D_GNU_SOURCE" >> $config_host_mak
+  echo "CXX=$CXX" >> $config_host_mak
+  echo "BUILD_CXXFLAGS=$CXXFLAGS -include config-host.h -D_GNU_SOURCE" >> $config_host_mak
   exit 0
   ;;
 esac
@@ -337,6 +384,16 @@ if test -z "$CC" ; then
       CC=clang
     else
       CC=gcc
+    fi
+  fi
+fi
+
+if test -z "$CXX" ; then
+  if test "$targetos" = "FreeBSD"; then
+    if has clang; then
+      CXX=clang
+    else
+      CXX=g++
     fi
   fi
 fi
@@ -1135,6 +1192,25 @@ fi
 echo "IPv6 helpers                  $ipv6"
 
 ##########################################
+# check for cbd
+cbd="no"
+cat > $TMPCXX << EOF
+#include <include/buffer.h>
+
+int main(int argc, char **argv)
+{
+  return sizeof(bufferlist);
+}
+EOF
+if test "$disable_cbd" != "yes"  && cxx_compile_prog "" "-lrbd -lrados -lboost_system" "cbd"; then
+  LIBS="-lrbd -lrados -lceph-common -lboost_system -lstdc++ $LIBS"
+  cbd="yes"
+fi
+$TMPE
+BUFFERLIST_SIZE=$?
+echo "Cohort Block Device engine    $cbd"
+
+##########################################
 # check for rbd
 rbd="no"
 cat > $TMPC << EOF
@@ -1395,6 +1471,10 @@ fi
 if test "$ipv6" = "yes" ; then
   output_sym "CONFIG_IPV6"
 fi
+if test "$cbd" = "yes" ; then
+  output_sym "CONFIG_CBD"
+  echo "#define BUFFERLIST_SIZE $BUFFERLIST_SIZE" >> $config_host_h
+fi
 if test "$rbd" = "yes" ; then
   output_sym "CONFIG_RBD"
 fi
@@ -1420,6 +1500,9 @@ if test "$zlib" = "no" ; then
 fi
 
 echo "LIBS+=$LIBS" >> $config_host_mak
+echo "LDFLAGS+=$LDFLAGS" >> $config_host_mak
 echo "CFLAGS+=$CFLAGS" >> $config_host_mak
 echo "CC=$cc" >> $config_host_mak
 echo "BUILD_CFLAGS=$BUILD_CFLAGS $CFLAGS" >> $config_host_mak
+echo "CXX=$cxx" >> $config_host_mak
+echo "BUILD_CXXFLAGS=$BUILD_CXXFLAGS $CXXFLAGS" >> $config_host_mak

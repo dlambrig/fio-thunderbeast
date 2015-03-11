@@ -97,8 +97,9 @@ enum opt_category_group {
 	__FIO_OPT_G_LIBAIO,
 	__FIO_OPT_G_ACT,
 	__FIO_OPT_G_LATPROF,
-        __FIO_OPT_G_RBD,
-        __FIO_OPT_G_GFAPI,
+	__FIO_OPT_G_RBD,
+	__FIO_OPT_G_CBD,
+	__FIO_OPT_G_GFAPI,
 	__FIO_OPT_G_NR,
 
 	FIO_OPT_G_RATE		= (1U << __FIO_OPT_G_RATE),
@@ -129,6 +130,7 @@ enum opt_category_group {
 	FIO_OPT_G_ACT		= (1U << __FIO_OPT_G_ACT),
 	FIO_OPT_G_LATPROF	= (1U << __FIO_OPT_G_LATPROF),
 	FIO_OPT_G_RBD		= (1U << __FIO_OPT_G_RBD),
+	FIO_OPT_G_CBD		= (1U << __FIO_OPT_G_CBD),
 	FIO_OPT_G_GFAPI		= (1U << __FIO_OPT_G_GFAPI),
 	FIO_OPT_G_INVALID	= (1U << __FIO_OPT_G_NR),
 };
