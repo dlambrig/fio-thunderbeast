@@ -114,6 +114,10 @@ struct io_u {
 #ifdef CONFIG_RDMA
 		struct ibv_mr *mr;
 #endif
+
+#ifdef CONFIG_CBD
+		char bl[BUFFERLIST_SIZE];
+#endif
 		void *mmap_data;
 	};
 };
