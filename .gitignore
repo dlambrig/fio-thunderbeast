@@ -6,6 +6,7 @@
 /config-host.mak
 /config.log
 /cscope.out
+/cscope.files
 /fio
 y.tab.*
 lex.yy.c
