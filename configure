@@ -1252,7 +1252,7 @@ echo "IPv6 helpers                  $ipv6"
 # check for cbd
 cbd="no"
 cat > $TMPCXX << EOF
-#include <include/buffer.h>
+#include <buffer.h>
 
 int main(int argc, char **argv)
 {

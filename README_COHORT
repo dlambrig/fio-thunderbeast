@@ -1,0 +1,3 @@
+
+LD_LIBRARY_PATH=/home/ceph/cohort/cohort-install/lib ./configure --extra-cflags="-I/home/ceph/cohort/cohort-install/include" --extra-cxxflags="-std=gnu++1y -I/home/ceph/cohort/cohort-build/include -L/home/ceph/cohort/cohort-install/lib -I/home/ceph/cohort/cohort-src/src/ -I/home/ceph/cohort/cohort-install/include/rados" --extra-ldflags="-L/home/ceph/cohort/cohort-install/lib -I/home/ceph/cohort/cohort-install/include"
+

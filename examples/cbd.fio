@@ -8,11 +8,11 @@
 ######################################################################
 [global]
 ioengine=cbd
-volume=cbd
-image=test_cbd
+volume=test1
+image=cbd_test
 invalidate=0	# mandatory
-rw=randwrite
-bs=4k
+rw=read
+bs=1M
 
 [cbd_iodepth2]
 iodepth=32

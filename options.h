@@ -99,10 +99,8 @@ enum opt_category_group {
 	__FIO_OPT_G_LATPROF,
         __FIO_OPT_G_RBD,
         __FIO_OPT_G_GFAPI,
-	__FIO_OPT_G_RBD,
 	__FIO_OPT_G_CBD,
         __FIO_OPT_G_CEPHOSD,
-	__FIO_OPT_G_GFAPI,
 	__FIO_OPT_G_NR,
 
 	FIO_OPT_G_RATE		= (1U << __FIO_OPT_G_RATE),

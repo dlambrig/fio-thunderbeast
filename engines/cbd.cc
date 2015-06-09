@@ -125,7 +125,7 @@ static struct io_u *fio_cbd_event(struct thread_data *td, int event)
 static int fio_cbd_getevents(struct thread_data *td,
 			     unsigned int min,
 			     unsigned int max,
-			     struct timespec *t)
+			     const struct timespec *t)
 {
   cbd_data* data = static_cast<cbd_data*>(td->io_ops->data);
   size_t events = 0;
