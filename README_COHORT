@@ -1,3 +1,30 @@
+About
+-----
+This is an adendum to the README written by Jens Axboe for the purpose of
+setting building on an new enviroment, and to ensure that the cohort block 
+device and libosd engines are built.
 
-LD_LIBRARY_PATH=/home/ceph/cohort/cohort-install/lib ./configure --extra-cflags="-I/home/ceph/cohort/cohort-install/include" --extra-cxxflags="-std=gnu++1y -I/home/ceph/cohort/cohort-build/include -L/home/ceph/cohort/cohort-install/lib -I/home/ceph/cohort/cohort-src/src/ -I/home/ceph/cohort/cohort-install/include/rados" --extra-ldflags="-L/home/ceph/cohort/cohort-install/lib -I/home/ceph/cohort/cohort-install/include"
+Warning: the cohort block device engine segfaults at the end of a run and the results seem slower?
+
+-Ali Maredia 6/11/15
+
+Prerequisites
+-------------
+g++
+autotools
+a built and install version of the cohort branch
+more?
+
+Configuration and Build
+------------------------
+in the below configure command the enviroment consists of:
+-A user named ceph
+-3 directories under home:
+	-cohort/cohort-install/
+	-cohort/cohort-src/
+	-cohort/cohort-build/
+
+$ ./configure --extra-cflags="-I/home/ceph/cohort/cohort-install/include" --extra-cxxflags="-std=gnu++1y -I/home/ceph/cohort/cohort-build/include -L/home/ceph/cohort/cohort-install/lib -I/home/ceph/cohort/cohort-src/src/ -I/home/ceph/cohort/cohort-install/include/rados" --extra-ldflags="-L/home/ceph/cohort/cohort-install/lib -I/home/ceph/cohort/cohort-install/include"
+
+$ make (install)
 
