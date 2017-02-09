@@ -167,6 +167,8 @@ for opt do
   ;;
   --enable-libhdfs) libhdfs="yes"
   ;;
+  --ceph-libs=*) CEPH_LIBS="$optarg"
+  ;;
   --help)
     show_help="yes"
     ;;
@@ -187,6 +189,7 @@ if test "$show_help" = "yes" ; then
   echo "--enable-gfio          Enable building of gtk gfio"
   echo "--disable-numa         Disable libnuma even if found"
   echo "--enable-libhdfs       Enable hdfs support"
+  echo "--ceph-libs            Path to ceph libraries"
   exit $exit_val
 fi
 
@@ -1234,8 +1237,10 @@ if test "$disable_cephosd" != "yes"  && compile_prog "" "-lceph-osd -lrados" "ce
   LIBS="-lceph-osd -lrados $LIBS"
   cephosd="yes"
 fi
+LIBS="-lcephd -lrados  -lblkid -lnss3 -lnspr4 -ldl -lresolv -lpthread -lstdc++ -lboost_iostreams -lboost_system -lboost_atomic -lboost_thread -lboost_random   -lleveldb -laio -lfuse -ltcmalloc $LIBS -L $CEPH_LIBS/lib -L$CEPH_LIBS/boost/lib"
+cephosd="yes"
 echo "Ceph OSD engine               $cephosd"
-
+echo "Ceph libraries                $CEPH_LIBS"
 ##########################################
 # check for rbd_invaidate_cache()
 rbd_inval="no"
@@ -1567,7 +1572,7 @@ if test "$rbd_inval" = "yes" ; then
   output_sym "CONFIG_RBD_INVAL"
 fi
 if test "$cephosd" = "yes" ; then
-  output_sym "CONFIG_CEPHOSD"
+    output_sym "CONFIG_CEPHOSD"
 fi
 if test "$setvbuf" = "yes" ; then
   output_sym "CONFIG_SETVBUF"

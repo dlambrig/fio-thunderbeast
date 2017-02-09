@@ -162,6 +162,7 @@ static uint32_t XXH_readLE32(const uint32_t* ptr, XXH_endianess endian) { return
 //****************************
 // Simple Hash Functions
 //****************************
+
 static uint32_t XXH32_endian_align(const void* input, int len, uint32_t seed, XXH_endianess endian, XXH_alignment align)
 {
     const uint8_t *p = (const uint8_t *)input;
@@ -220,7 +221,7 @@ static uint32_t XXH32_endian_align(const void* input, int len, uint32_t seed, XX
     return h32;
 }
 
-
+#if 0
 uint32_t XXH32(const void* input, uint32_t len, uint32_t seed)
 {
 #if 0
@@ -248,6 +249,7 @@ uint32_t XXH32(const void* input, uint32_t len, uint32_t seed)
 #endif
 }
 
+#endif
 
 //****************************
 // Advanced Hash Functions
@@ -345,7 +347,7 @@ static XXH_errorcode XXH32_update_endian (void* state_in, const void* input, int
 
     return XXH_OK;
 }
-
+#if 0
 XXH_errorcode XXH32_update (void* state_in, const void* input, int len)
 {
     XXH_endianess endian_detected = (XXH_endianess)XXH_CPU_LITTLE_ENDIAN;
@@ -355,7 +357,7 @@ XXH_errorcode XXH32_update (void* state_in, const void* input, int len)
     else
         return XXH32_update_endian(state_in, input, len, XXH_bigEndian);
 }
-
+#endif
 
 
 static uint32_t XXH32_intermediateDigest_endian (void* state_in, XXH_endianess endian)
@@ -410,7 +412,7 @@ uint32_t XXH32_intermediateDigest (void* state_in)
         return XXH32_intermediateDigest_endian(state_in, XXH_bigEndian);
 }
 
-
+#if 0
 uint32_t XXH32_digest (void* state_in)
 {
     uint32_t h32 = XXH32_intermediateDigest(state_in);
@@ -419,3 +421,4 @@ uint32_t XXH32_digest (void* state_in)
 
     return h32;
 }
+#endif

@@ -9,15 +9,15 @@
 [global]
 ioengine=ceph-osd
 ceph_osd_id=0
-ceph_conf=/etc/ceph/ceph.conf
+ceph_conf=/home/ceph-dlambrig/build/ceph.conf
 ceph_cluster=ceph
-ceph_volume=fio_test
+ceph_volume=rbd
 invalidate=0	# mandatory
 rw=write
 bs=64k
 
 [ceph-osd]
-runtime=20s
+runtime=30s
 time_based=1
 nr_files=1
 size=64m

@@ -89,7 +89,7 @@ ifdef CONFIG_RBD
 endif
 ifdef CONFIG_CEPHOSD
   SOURCE += engines/ceph_osd.c
-  SOURCE += engines/ceph_osd_remote.c
+#  SOURCE += engines/ceph_osd_remote.c
 endif
 ifndef CONFIG_STRSEP
   SOURCE += lib/strsep.c
